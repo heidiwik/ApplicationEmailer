@@ -23,6 +23,9 @@ namespace Hakemus
             string subject = json.subject;
             string content = json.content;
             string recipient = json.recipient;
+            string recipientName = json.recipientName;
+            string fromName = json.fromName;
+            string fromEmail = json.fromEmail;
 
             var filestorageConnection = Environment.GetEnvironmentVariable("FileStorage");
             var storageAccount = CloudStorageAccount.Parse(filestorageConnection);
@@ -37,7 +40,7 @@ namespace Hakemus
 
             string[][] attachments = { attachmentCV, attachmentApplication };
 
-            Execute(subject, content, recipient, attachments).Wait();
+            Execute(subject, content, recipient, recipientName, fromName, fromEmail, attachments).Wait();
         }
 
         
@@ -65,7 +68,7 @@ namespace Hakemus
 
 
 
-        static async Task Execute(String subject, String content, String recipient, string[][] attachments)
+        static async Task Execute(String subject, String content, String recipient, String recipientName, String fromName, String fromEmail, string[][] attachments)
         {
 
             try
@@ -75,18 +78,18 @@ namespace Hakemus
 
                 var msg = new SendGridMessage()
                 {
-                    From = new EmailAddress("heidi.wikman@kapsi.fi", "Heidi Wikman"),
+                    From = new EmailAddress(fromEmail, fromName),
                     Subject = subject,
                     PlainTextContent = content,
                 };
-                msg.AddTo(new EmailAddress(recipient, "Heidi"));
+                msg.AddTo(new EmailAddress(recipient, recipientName));
 
-                foreach (string[] i in attachments)
+                foreach (string[] attachedFile in attachments)
                 {
                     Attachment attachment = new Attachment();
-                    attachment.Content = i[0];
+                    attachment.Content = attachedFile[0];
                     attachment.Type = "application/pdf";
-                    attachment.Filename = i[1];
+                    attachment.Filename = attachedFile[1];
                     attachment.Disposition = "attachment";
                     msg.AddAttachment(attachment);
                 }
@@ -101,6 +104,5 @@ namespace Hakemus
                 Console.Read();
             }
         }
-
     }
 }
