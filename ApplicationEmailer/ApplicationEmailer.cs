@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Azure.Storage.Blob;
 using Microsoft.Azure.Storage;
+using System.Collections;
 
 namespace Hakemus
 {
@@ -18,6 +19,7 @@ namespace Hakemus
             ILogger log)
         {
             log.LogInformation($"C# Queue trigger function processed: {messageItem}");
+
             dynamic json = JsonConvert.DeserializeObject(messageItem);
 
             string subject = json.subject;
@@ -27,18 +29,23 @@ namespace Hakemus
             string fromName = json.fromName;
             string fromEmail = json.fromEmail;
 
-            var filestorageConnection = Environment.GetEnvironmentVariable("FileStorage");
-            var storageAccount = CloudStorageAccount.Parse(filestorageConnection);
+            Console.WriteLine("Finding attached files");
 
             string containerName = "files";
 
-            string CVFileName = "CV.pdf";
-            string applicationFileName = "Hakemus.pdf";
+            ArrayList attachments = new ArrayList();
 
-            string[] attachmentCV = { GetAttachment(containerName, CVFileName), CVFileName };
-            string[] attachmentApplication = { GetAttachment(containerName, applicationFileName), applicationFileName };
+            foreach (var attachedFileName in json.attachments)
+            {
+               Console.WriteLine(attachedFileName);
 
-            string[][] attachments = { attachmentCV, attachmentApplication };
+               string attachedFileNameValue = attachedFileName.Value;
+
+               string attachedFileData = GetAttachment(containerName, attachedFileNameValue);
+
+               string[] attachedFile = { attachedFileData, attachedFileName };
+               attachments.Add(attachedFile);
+            }
 
             Execute(subject, content, recipient, recipientName, fromName, fromEmail, attachments).Wait();
         }
@@ -67,8 +74,8 @@ namespace Hakemus
         }
 
 
-
-        static async Task Execute(String subject, String content, String recipient, String recipientName, String fromName, String fromEmail, string[][] attachments)
+        
+        static async Task Execute(String subject, String content, String recipient, String recipientName, String fromName, String fromEmail, ArrayList attachments)
         {
 
             try
